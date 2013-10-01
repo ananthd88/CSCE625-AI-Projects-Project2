@@ -1,0 +1,427 @@
+Goal: [1, 3, 4, 8, 6, 2, 7, 0, 5]
+==============================
+Path is given below:
+UP RIGHT UP LEFT DOWN 
+------------------------------
+Algorithm               = bfs
+Heuristic               = None
+Time taken              = 0.0
+No. of tests done       = 38
+Max. queue length       = 32
+No. of duplicates found = 36
+Max. depth searched     = 5
+Goal found              = True
+Goal depth/Path length  = 5
+==============================
+Time expired
+Algorithm               = dfs
+Heuristic               = None
+Time taken              = 300.05
+No. of tests done       = 12008
+Max. queue length       = 45
+No. of duplicates found = 12798
+Max. depth searched     = 50
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+==============================
+Path is given below:
+LEFT UP RIGHT DOWN LEFT UP RIGHT DOWN LEFT UP RIGHT RIGHT UP LEFT LEFT DOWN RIGHT UP LEFT DOWN RIGHT UP LEFT DOWN RIGHT 
+------------------------------
+Algorithm               = dls
+Heuristic               = None
+Time taken              = 1.39
+No. of tests done       = 978
+Max. queue length       = 24
+No. of duplicates found = 1010
+Max. depth searched     = 25
+Goal found              = True
+Goal depth/Path length  = 25
+==============================
+Algorithm               = ids
+Heuristic               = None
+Time taken              = 0.0
+No. of tests done       = 53
+Max. queue length       = 3
+No. of duplicates found = 150
+Max. depth searched     = 1
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+==============================
+Path is given below:
+UP RIGHT UP LEFT DOWN 
+------------------------------
+Algorithm               = greedy
+Heuristic               = No. of states out of place
+Time taken              = 0.0
+No. of tests done       = 7
+Max. queue length       = 8
+No. of duplicates found = 5
+Max. depth searched     = 5
+Goal found              = True
+Goal depth/Path length  = 5
+==============================
+==============================
+Path is given below:
+UP RIGHT UP LEFT DOWN 
+------------------------------
+Algorithm               = greedy
+Heuristic               = Manhatten distance
+Time taken              = 0.0
+No. of tests done       = 6
+Max. queue length       = 7
+No. of duplicates found = 4
+Max. depth searched     = 5
+Goal found              = True
+Goal depth/Path length  = 5
+==============================
+==============================
+Path is given below:
+UP RIGHT UP LEFT DOWN 
+------------------------------
+Algorithm               = a*
+Heuristic               = No. of states out of place
+Time taken              = 0.0
+No. of tests done       = 7
+Max. queue length       = 8
+No. of duplicates found = 5
+Max. depth searched     = 5
+Goal found              = True
+Goal depth/Path length  = 5
+==============================
+==============================
+Path is given below:
+UP RIGHT UP LEFT DOWN 
+------------------------------
+Algorithm               = a*
+Heuristic               = Manhatten distance
+Time taken              = 0.0
+No. of tests done       = 6
+Max. queue length       = 7
+No. of duplicates found = 4
+Max. depth searched     = 5
+Goal found              = True
+Goal depth/Path length  = 5
+==============================
+Algorithm               = ida*
+Heuristic               = No. of states out of place
+Time taken              = 0.0
+No. of tests done       = 8
+Max. queue length       = 0
+No. of duplicates found = 4
+Max. depth searched     = 2
+Goal found              = False
+Goal depth/Path length  = -1
+Max. recursion depth    = 3
+==============================
+Path is given below:
+UP RIGHT UP LEFT DOWN 
+------------------------------
+Algorithm               = ida*
+Heuristic               = Manhatten distance
+Time taken              = 0.0
+No. of tests done       = 9
+Max. queue length       = 0
+No. of duplicates found = 3
+Max. depth searched     = 5
+Goal found              = True
+Goal depth/Path length  = 5
+Max. recursion depth    = 6
+==============================
+
+
+
+
+
+
+
+
+Goal: [2, 8, 1, 0, 4, 3, 7, 6, 5]
+==============================
+Path is given below:
+UP RIGHT RIGHT DOWN LEFT LEFT UP RIGHT DOWN 
+------------------------------
+Algorithm               = bfs
+Heuristic               = None
+Time taken              = 0.15
+No. of tests done       = 322
+Max. queue length       = 228
+No. of duplicates found = 340
+Max. depth searched     = 9
+Goal found              = True
+Goal depth/Path length  = 9
+==============================
+Time expired
+Algorithm               = dfs
+Heuristic               = None
+Time taken              = 300.06
+No. of tests done       = 12034
+Max. queue length       = 43
+No. of duplicates found = 12798
+Max. depth searched     = 50
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+Time expired
+Algorithm               = dls
+Heuristic               = None
+Time taken              = 300.04
+No. of tests done       = 12202
+Max. queue length       = 23
+No. of duplicates found = 12906
+Max. depth searched     = 25
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+Algorithm               = ids
+Heuristic               = None
+Time taken              = 0.0
+No. of tests done       = 53
+Max. queue length       = 3
+No. of duplicates found = 150
+Max. depth searched     = 1
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+==============================
+Path is given below:
+UP RIGHT RIGHT DOWN LEFT LEFT UP RIGHT DOWN 
+------------------------------
+Algorithm               = greedy
+Heuristic               = No. of states out of place
+Time taken              = 0.0699999999999
+No. of tests done       = 166
+Max. queue length       = 111
+No. of duplicates found = 177
+Max. depth searched     = 21
+Goal found              = True
+Goal depth/Path length  = 9
+==============================
+==============================
+Path is given below:
+RIGHT UP RIGHT DOWN LEFT UP LEFT DOWN RIGHT RIGHT UP LEFT LEFT DOWN RIGHT UP RIGHT DOWN LEFT 
+------------------------------
+Algorithm               = greedy
+Heuristic               = Manhatten distance
+Time taken              = 0.22
+No. of tests done       = 238
+Max. queue length       = 174
+No. of duplicates found = 250
+Max. depth searched     = 31
+Goal found              = True
+Goal depth/Path length  = 19
+==============================
+==============================
+Path is given below:
+UP RIGHT RIGHT DOWN LEFT LEFT UP RIGHT DOWN 
+------------------------------
+Algorithm               = a*
+Heuristic               = No. of states out of place
+Time taken              = 0.0
+No. of tests done       = 34
+Max. queue length       = 32
+No. of duplicates found = 32
+Max. depth searched     = 9
+Goal found              = True
+Goal depth/Path length  = 9
+==============================
+==============================
+Path is given below:
+UP RIGHT RIGHT DOWN LEFT LEFT UP RIGHT DOWN 
+------------------------------
+Algorithm               = a*
+Heuristic               = Manhatten distance
+Time taken              = 0.0
+No. of tests done       = 18
+Max. queue length       = 17
+No. of duplicates found = 16
+Max. depth searched     = 9
+Goal found              = True
+Goal depth/Path length  = 9
+==============================
+Algorithm               = ida*
+Heuristic               = No. of states out of place
+Time taken              = 0.0
+No. of tests done       = 8
+Max. queue length       = 0
+No. of duplicates found = 4
+Max. depth searched     = 2
+Goal found              = False
+Goal depth/Path length  = -1
+Max. recursion depth    = 3
+==============================
+Algorithm               = ida*
+Heuristic               = Manhatten distance
+Time taken              = 0.0
+No. of tests done       = 20
+Max. queue length       = 0
+No. of duplicates found = 11
+Max. depth searched     = 4
+Goal found              = False
+Goal depth/Path length  = -1
+Max. recursion depth    = 5
+==============================
+
+
+
+
+
+
+
+
+
+Goal: [5, 6, 7, 4, 0, 8, 3, 2, 1]
+Time expired
+Algorithm               = bfs
+Heuristic               = None
+Time taken              = 300.03
+No. of tests done       = 14050
+Max. queue length       = 8241
+No. of duplicates found = 15848
+Max. depth searched     = 16
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+Time expired
+Algorithm               = dfs
+Heuristic               = None
+Time taken              = 300.07
+No. of tests done       = 12084
+Max. queue length       = 44
+No. of duplicates found = 12781
+Max. depth searched     = 50
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+Time expired
+Algorithm               = dls
+Heuristic               = None
+Time taken              = 300.04
+No. of tests done       = 12291
+Max. queue length       = 24
+No. of duplicates found = 13118
+Max. depth searched     = 25
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+Algorithm               = ids
+Heuristic               = None
+Time taken              = 0.0
+No. of tests done       = 54
+Max. queue length       = 4
+No. of duplicates found = 200
+Max. depth searched     = 1
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+==============================
+Path is given below:
+UP RIGHT DOWN DOWN LEFT UP RIGHT UP LEFT DOWN LEFT UP RIGHT RIGHT DOWN LEFT UP LEFT DOWN RIGHT DOWN LEFT UP UP RIGHT RIGHT DOWN LEFT DOWN RIGHT UP UP LEFT DOWN DOWN RIGHT UP UP LEFT DOWN LEFT DOWN RIGHT UP RIGHT DOWN LEFT LEFT UP RIGHT 
+------------------------------
+Algorithm               = greedy
+Heuristic               = No. of states out of place
+Time taken              = 80.66
+No. of tests done       = 6090
+Max. queue length       = 1834
+No. of duplicates found = 6885
+Max. depth searched     = 50
+Goal found              = True
+Goal depth/Path length  = 50
+==============================
+==============================
+Path is given below:
+UP RIGHT DOWN DOWN LEFT UP UP RIGHT DOWN DOWN LEFT UP UP RIGHT DOWN LEFT LEFT UP RIGHT RIGHT DOWN LEFT LEFT DOWN RIGHT UP LEFT UP RIGHT DOWN RIGHT UP LEFT LEFT DOWN RIGHT DOWN RIGHT UP LEFT LEFT DOWN RIGHT RIGHT UP LEFT DOWN LEFT UP RIGHT 
+------------------------------
+Algorithm               = greedy
+Heuristic               = Manhatten distance
+Time taken              = 1.0
+No. of tests done       = 507
+Max. queue length       = 359
+No. of duplicates found = 525
+Max. depth searched     = 50
+Goal found              = True
+Goal depth/Path length  = 50
+==============================
+Time expired
+Algorithm               = a*
+Heuristic               = No. of states out of place
+Time taken              = 300.03
+No. of tests done       = 10655
+Max. queue length       = 6768
+No. of duplicates found = 11972
+Max. depth searched     = 17
+Goal found              = False
+Goal depth/Path length  = -1
+==============================
+==============================
+Path is given below:
+UP RIGHT DOWN DOWN LEFT LEFT UP UP RIGHT RIGHT DOWN DOWN LEFT LEFT UP UP RIGHT RIGHT DOWN DOWN LEFT LEFT UP UP RIGHT RIGHT DOWN DOWN LEFT UP 
+------------------------------
+Algorithm               = a*
+Heuristic               = Manhatten distance
+Time taken              = 57.02
+No. of tests done       = 3984
+Max. queue length       = 2457
+No. of duplicates found = 4370
+Max. depth searched     = 30
+Goal found              = True
+Goal depth/Path length  = 30
+==============================
+Algorithm               = ida*
+Heuristic               = No. of states out of place
+Time taken              = 0.0
+No. of tests done       = 6
+Max. queue length       = 0
+No. of duplicates found = 4
+Max. depth searched     = 1
+Goal found              = False
+Goal depth/Path length  = -1
+Max. recursion depth    = 3
+==============================
+Algorithm               = ida*
+Heuristic               = Manhatten distance
+Time taken              = 8.39
+No. of tests done       = 2900
+Max. queue length       = 0
+No. of duplicates found = 1740
+Max. depth searched     = 21
+Goal found              = False
+Goal depth/Path length  = -1
+Max. recursion depth    = 6
+==============================
+
+
+
+
+
+
+
+
+
+
+Analysis:
+Analysis for the performance on the easy puzzle
+For the Easy Puzzle, every algorithm completed successfully.
+We see that BFS tested fewer boards than other uninformed searches namely DFS, DLS, IDS. 
+Although, BFS queue length was much longer than DFS, DLS or IDS.
+Whereas the Informed searches performed far fewer tests compared to any of the uninformed searches.
+Also, DFS, DLS fails to find the optimum solution (the least deep goal board). Both finds the goal at deeper levels.
+Among the informed searches, the Manhatten distance seem to be a better heuristic compared to the No. of tiles which are out of place.
+This is evident from the stats, there are far fewer tests or duplicates detected in the case of Manhatten distance as a heuristic function.
+
+Analysis for the performance on the medium puzzle
+Most of the trends are reproduced even in this run.
+In this puzzle, the greedy algorithm does not find the solution quickly and is stopped after 60 secs.
+This could be because of the high cost of sorting the queue every time child nodes are added. This could slow down greedy algorithm.
+A* search successfully finds the goal boards. 
+A8 performance is better with manhatten distance as was demostrated in the previous puzzle. Number of
+tests done as well as queue length is smaller when using Manhatten distance.
+
+Analysis for the hard puzzle
+Again, most of the trends are repeated.
+Except that some algorithms timed out and exited unsuccessfully.
+The uninformed search algorithms took too long to find the right solution and hence were terminated after 5mins.
+This could be dude to the length of the queue as well as the hard depth limit imposed on DFS and IDS.
+The DFS & IDS implementations restricts exploring candidate boards which are below the depth of 100.
+The failure among the informed searches could be because of the cost involved in sorting the queue for A* and Greedy algorithms.

@@ -1,0 +1,62 @@
+Ananth Dileepkumar
+UIN: 721007513
+CSCE 625 Programming Assignment 2
+
+Documentation for Programming Assignment 2
+
+How to use the program
+usage: python eight.py [-h] [--version] -a <algorithm> -r <tile> [<tile> ...]
+                      [-g <tile> [<tile> ...]] [-d <depth limit>]
+                      [-f <heuristic function>] [-v]
+
+8-Puzzle Program
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  -a <algorithm>        Search algorithm to be used, could be one of "bfs",
+                        "dfs", "dls", "ids", "greedy", "a*" or "ida*"
+                        (default: all)
+  -r <tile> [<tile> ...]
+                        Root board to be used. Do not use commas or quotes Eg.
+                        "0 1 2 3 4 5 6 7 8 9" (default: None)
+  -g <tile> [<tile> ...]
+                        Goal board to be used. Do not use commas or quotes Eg.
+                        "0 1 2 3 4 5 6 7 8 9" (default: ['1', '2', '3', '8',
+                        '0', '4', '7', '6', '5'])
+  -d <depth limit>      Depth upto which to be searched. Required for dls,
+                        ida*. If not provided, default value of 25 would be
+                        used (default: 25)
+  -f <heuristic function>
+                        Heuristic function to be used. Should be within
+                        quotes. Eg. "h1" or "h2" (default: None)
+  -v                    Prints verbose output (default: False)
+
+
+Some examples:
+To search using a* with the Manhatten Distance as the heuristic, for the root configuration: [1 3 4 8 6 2 7 0 5],
+python eight.py -a a* -r 1 3 4 8 6 2 7 0 5 -f h2
+
+To search using dls with the depth limited to 100, for the root configuration: [1 3 4 8 6 2 7 0 5] and goal: [0 1 2 3 4 5 6 7 8],
+python eight.py -a dls -d 100 -r 1 3 4 8 6 2 7 0 5 -g 0 1 2 3 4 5 6 7 8
+
+
+Main Classes included:
+Board -  Abstracts the notion of a board with 8 tiles/cells
+EightPuzzle - Abstracts the notion of the puzzle, with the root and goal boards, algorithms to be used, heuristics, etc.
+Main  -  The class which encapsulates the main function and command line parser
+
+Auxiliary classes:
+Times - Used to time snippets of code
+
+
+
+Implementation details:
+Since some search algorithms can incomplete and sometimes non-terminating, there are certain bounds enforced on such algorithms
+Most algorithms are reqstricted to 60 secs of running time after which they are declared unsuccessful.
+DFS, IDS and IDA* have the additional restriction that they are bounded to a hard depth limit of 100.
+Duplicate board states are never added to the queue/stack.
+Duplicates are detected by keeping track of visited board configurations using the set data structure of Python.
+The queue is sorted according to the heuristic function and estimation functions using the built-in sorting function of Python
+
+
