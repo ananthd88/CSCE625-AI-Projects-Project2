@@ -1,15 +1,22 @@
 import random
+import math
 
+# Class that abstracts the notion of the board
 class Board:
    def __init__(self):
-      #self.tiles = [[-1]*3]*3
       self.tiles = [[], [], []]
-      self.emptyTile = -1
-      self.possibleMoves = 0
-      self.parent = None
-      self.depth = 0
-      self.signature = ""
-      
+      self.emptyTile = -1                 # Position of the empty tile
+      self.possibleMoves = 0              # All possible moves, given the 
+                                          #  position of the empty tile
+      self.parent = None                  # The parent board from which this
+                                          #  board was derived through a single
+                                          #  move.
+      self.depth = 0                      # Depth of this board from the root
+      self.signature = ""                 # Signature for the board, unique to
+                                          #  a particular configuration of 
+                                          #  tiles.
+   
+   # Returns true if the boards are equal (with the same comfiguration)   
    def __eq__(self, other):
       for k in range(9):                  # Board size = 3
          i = k / 3
@@ -18,9 +25,11 @@ class Board:
            return False
       return True
    
+   # Returns a hash value for the board (unique to configirations)
    def __hash__(self):
       return hash(self.signature)
-
+   
+   # Returns a printable format of the board
    def __str__(self):
       string = ""
       for k in range(9):                  # Board size = 3
@@ -31,15 +40,22 @@ class Board:
             string += "\n"
       return string
    
+   # Compute the signature of the board, unique to its configuration
    def computeSignature(self):
       self.signature = ""
       for row in self.tiles:
          for tile in row:
             self.signature += `tile`
-
+   
+   # Return the signature of the board
    def getSignature(self):
       return self.signature
-
+   
+   # Move a the emtpy tile in the direction indicated by moveCode
+   # moveCode = 1 --> Move the empty tile UP
+   # moveCode = 2 --> Move the empty tile RIGHT
+   # moveCode = 4 --> Move the empty tile DOWN
+   # moveCode = 8 --> Move the empty tile LEFT
    def moveTile(self, moveCode):
       
       i = self.emptyTile / 3 # Board size = 3
@@ -84,12 +100,15 @@ class Board:
                                        #  leftmost column
             self.possibleMoves &= (~8)
    
+   # Scramble the board configuration for 'count' times, by making random movements
+   # Used for generating random starting board configuration
    def scrambleBoard(self, count):
       while count:
          numMoves = 4
          if self.possibleMoves != 8|4|2|1:
             numMoves -= 1
-            if self.possibleMoves != 8|4|2 and self.possibleMoves != 8|4|1 and self.possibleMoves != 8|2|1 and self.possibleMoves != 4|2|1:
+            if     self.possibleMoves != 8|4|2 and self.possibleMoves != 8|4|1 
+               and self.possibleMoves != 8|2|1 and self.possibleMoves != 4|2|1:
                numMoves -= 1
          rand = random.randint(1, numMoves)
          move = 1
@@ -101,16 +120,24 @@ class Board:
          self.moveTile(move)
          count -= 1
 
+   # Generate a board with a default configuration and then scramble it
+   # by making 'scrambleCount' random moves
+   # The default configuration would be:
+   # 0 1 2
+   # 3 4 5
+   # 6 7 8
    def generateBoard(self, scrambleCount):
       for k in range(9):                  # Board size = 3
          i = k / 3
          j = k % 3
          self.tiles[i].append(3*i + j)
       self.emptyTile = 0
-      self.possibleMoves = 2|4
+      self.possibleMoves = 2|4            # Can move right or down from the
+                                          #  top-left corner of the board
       if scrambleCount:
          self.scrambleBoard(scrambleCount)
-      
+
+   # Construct a board from the 'model' configuration
    def constructBoard(self, model):
       for k in range(9):                  # Board size = 3
          i = k / 3
@@ -128,7 +155,8 @@ class Board:
                self.possibleMoves |= 4
             if j != 0:
                self.possibleMoves |= 8
-      
+
+   # Make a copy of this board, with depth set to 0
    def copyBoard(self):
       copy = Board()
       for k in range(9):                  # Board size = 3
@@ -145,13 +173,16 @@ class Board:
       #print copy.tiles
       return copy
 
-   def spawnChild(self, moveCode): # moveCode should be a valid move in self.possibleMoves
+   # Create a child of this board by making a valid move
+   # moveCode should be a valid move in self.possibleMoves
+   def spawnChild(self, moveCode):
       child = self.copyBoard()
       child.moveTile(moveCode)
       child.parent = self
       child.depth += 1
       return child
 
+   # Print the path of derivation from the root board to this board
    def printPath(self):
       pathLength = 0
       stack = []
@@ -164,29 +195,42 @@ class Board:
          print self
       return pathLength - 1 # TODO: Check if correct
 
+# Class that abstracts the notion of the 8Puzzle
 class EightPuzzle:
    def __init__(self, root, goal):
-      self.root = root
-      self.goal = goal
-      self.timeTaken = 0.0
-      self.numTestDone = 0
-      self.maxQueueLength = 0
-      self.numDuplicatesFound = 0
-      self.maxDepthSearched = 0
-      self.pathLength = 0
-      self.goalFounded = False
-      self.goalDepth = -1
-      
+      self.root = root              # Root board
+      self.goal = goal              # Goal board
+      self.timeTaken = 0.0          # Time taken for the search
+      self.numTestDone = 0          # Number of tests against the goal board 
+                                    #  done.
+      self.maxQueueLength = 0       # Max. queue length
+      self.numDuplicatesFound = 0   # Number of duplicates detected and 
+                                    #  eliminated
+      self.maxDepthSearched = 0     # Max depth searched
+      self.pathLength = 0           # Length of the path from root to goal 
+                                    #  board
+      self.goalFounded = False      # Whether the search for the goal was 
+                                    #  successful or not
+      self.goalDepth = -1           # Depth at which the goal was found
+      self.reverseIndex = {}        # Dictionary (Reverse index) of where each
+                                    #  number in the goal state is located.
+      for k in range(9):
+         i = k / 3
+         j = k % 3
+         self.reverseIndex[self.goal.tiles[i][j]] = k
+
+   # Print the stats for the search run
    def printStats(self):
-      print "Time taken = " + str(self.timeTaken)
-      print "No. of tests done = " + str(self.numTestDone)
-      print "Max. queue length = " + str(self.maxQueueLength)
-      print "No. of duplicates found = " + str(self.numDuplicatesFound)
-      print "Max. depth searched = " + str(self.maxDepthSearched)
-      print "Path length = " + str(self.pathLength)
-      print "Goal found = " + str(self.goalFounded)
-      print "Goal depth = " + str(self.goalDepth)
-      
+      print "Time taken              = "  + str(self.timeTaken)
+      print "No. of tests done       = "  + str(self.numTestDone)
+      print "Max. queue length       = "  + str(self.maxQueueLength)
+      print "No. of duplicates found = "  + str(self.numDuplicatesFound)
+      print "Max. depth searched     = "  + str(self.maxDepthSearched)
+      print "Path length             = "  + str(self.pathLength)
+      print "Goal found              = "  + str(self.goalFounded)
+      print "Goal depth              = "  + str(self.goalDepth)
+
+   # Breadth First Search
    def bfs(self):
       queue = [self.root]
       self.numTestDone = 0
@@ -195,15 +239,17 @@ class EightPuzzle:
       self.maxDepthSearched = 0
       self.pathLength = 0
       
+      # Keeps track of the boards that have been visited
       visitedBoards = set()
-      visitedBoards.add(self.root)
       
+      # While there are candidate boards in the queue
       while queue:
          # Keep track of the max queue length
          if len(queue) > self.maxQueueLength:
             self.maxQueueLength = len(queue)
          
-         # Retrieve the next candidate
+         # Retrieve the next candidate, mark it was visited, increment count 
+         #  of tests
          candidate = queue.pop(0)
          self.numTestDone += 1
          visitedBoards.add(self)
@@ -213,12 +259,13 @@ class EightPuzzle:
          # Test if this is the goal
          if candidate == self.goal:
             print "Goal found at a depth of " + str(candidate.depth)
-            self.pathLength = candidate.printPath()
             self.goalFounded = True
+            self.pathLength = candidate.printPath()
             self.goalDepth = candidate.depth
             return True
          
-         #Detect duplicates among children, increment count, add only non-duplicates to queue
+         # Detect duplicates among children, increment count, add only 
+         #  non-duplicates to queue
          moves = candidate.possibleMoves
          mask = 1
          while mask != 16:
@@ -231,6 +278,7 @@ class EightPuzzle:
             mask <<= 1;
       return False
 
+   # Depth First Search
    def dfs(self):
       stack = [self.root]
       self.numTestDone = 0
@@ -239,15 +287,17 @@ class EightPuzzle:
       self.maxDepthSearched = 0
       self.pathLength = 0
       
+      # Keeps track of the boards that have been visited
       visitedBoards = set()
-      visitedBoards.add(self.root)
       
+      # While there are candidate boards in the stack
       while stack:
          # Keep track of the max stack length
          if len(stack) > self.maxQueueLength:
             self.maxQueueLength = len(stack)
          
-         # Retrieve the next candidate
+         # Retrieve the next candidate, mark it was visited, increment count 
+         #  of tests
          candidate = stack.pop()
          self.numTestDone += 1
          visitedBoards.add(self)
@@ -262,7 +312,8 @@ class EightPuzzle:
             self.goalDepth = candidate.depth
             return True
          
-         #Detect duplicates among children, increment count, add only non-duplicates to stack
+         # Detect duplicates among children, increment count, add only 
+         #  non-duplicates to queue
          moves = candidate.possibleMoves
          mask = 1
          while mask != 16:
@@ -283,22 +334,19 @@ class EightPuzzle:
       self.maxDepthSearched = 0
       self.pathLength = 0
       
+      # Keeps track of the boards that have been visited
       visitedBoards = set()
-      visitedBoards.add(self.root)
       
+      # While there are candidate boards in the stack
       while stack:
          # Keep track of the max stack length
          if len(stack) > self.maxQueueLength:
             self.maxQueueLength = len(stack)
          
-         # Retrieve the next candidate
+         # Retrieve the next candidate, mark it was visited, increment count 
+         #  of tests
          candidate = stack.pop()
-         print candidate, str(candidate.depth)
-         if candidate.depth > depthLimit:
-            print "Depth limit"
-            continue
-            #print "Depth limit reached. Goal not found."
-            #return False
+         #print candidate, str(candidate.depth)
          self.numTestDone += 1
          visitedBoards.add(self)
          if self.maxDepthSearched < candidate.depth:
@@ -312,7 +360,8 @@ class EightPuzzle:
             self.goalDepth = candidate.depth
             return True
          
-         #Detect duplicates among children, increment count, add only non-duplicates to stack
+         # Detect duplicates among children, increment count, add only 
+         #  non-duplicates to queue
          moves = candidate.possibleMoves
          mask = 1
          while mask != 16:
@@ -321,7 +370,8 @@ class EightPuzzle:
                if child in visitedBoards:
                   self.numDuplicatesFound += 1
                else:
-                  stack.append(child)
+                  if child.depth <= depthLimit:
+                     stack.append(child)
             mask <<= 1;
       return False
 
@@ -336,22 +386,21 @@ class EightPuzzle:
       if not hardDepthLimit:
          hardDepthLimit = 100
       
+      # Keeps track of the boards that have been visited
       visitedBoards = set()
-      visitedBoards.add(self.root)
       
       depthLimit = 0
       while depthLimit < hardDepthLimit:
          depthLimit += 1
+         # While there are candidate boards in the stack
          while stack:
             # Keep track of the max stack length
             if len(stack) > self.maxQueueLength:
                self.maxQueueLength = len(stack)
             
-            # Retrieve the next candidate
+            # Retrieve the next candidate, mark it was visited, increment count 
+            #  of tests
             candidate = stack.pop()
-            if candidate.depth > depthLimit:
-               print "Depth limit reached. Goal not found."
-               return
             self.numTestDone += 1
             visitedBoards.add(self)
             if self.maxDepthSearched < candidate.depth:
@@ -365,7 +414,8 @@ class EightPuzzle:
                self.goalDepth = candidate.depth
                return True
             
-            #Detect duplicates among children, increment count, add only non-duplicates to stack
+            # Detect duplicates among children, increment count, add only 
+            #  non-duplicates to queue
             moves = candidate.possibleMoves
             mask = 1
             while mask != 16:
@@ -374,11 +424,189 @@ class EightPuzzle:
                   if child in visitedBoards:
                      self.numDuplicatesFound += 1
                   else:
-                     stack.append(child)
+                     if child.depth <= depthLimit:
+                        stack.append(child)
                mask <<= 1;
       return False   
 
+   def h1(self, candidateBoard):
+      difference = 0
+      for k in range(9):
+         i = k / 3
+         j = k % 3
+         if self.goal.tiles[i][j] != candidateBoard.tiles[i][j]:
+            difference += 1
+      return difference
    
+   def h2(self, candidateBoard):
+      manhattenDistance = 0
+      for k in range(9):
+         i = k / 3
+         j = k % 3
+         goalPosition = self.reverseIndex[candidateBoard.tiles[i][j]]
+         l = goalPosition / 3
+         m = goalPosition % 3
+         manhattenDistance += math.fabs(i-l) + math.fabs(j-m)
+      return manhattenDistance
+   
+   def estimatedCostH1(self, candidateBoard):
+      return candidateBoard.depth + h1(candidateBoard)
+
+   def estimatedCostH2(self, candidateBoard):
+      return candidateBoard.depth + h2(candidateBoard)
+
+   def greedy(self, heuristicFunctionFlag):
+      queue = [self.root]
+      self.numTestDone = 0
+      self.maxQueueLength = 0
+      self.numDuplicatesFound = 0
+      self.maxDepthSearched = 0
+      self.pathLength = 0
+      
+      # Keeps track of the boards that have been visited
+      visitedBoards = set()
+      
+      while queue:
+         # Keep track of the max queue length
+         if len(queue) > self.maxQueueLength:
+            self.maxQueueLength = len(queue)
+         
+         # Retrieve the next candidate, mark it was visited, increment count 
+         #  of tests
+         if heuristicFunctionFlag:
+            queue = sorted(queue, key = self.h1)
+         else:
+            queue = sorted(queue, key = self.h2)
+         candidate = queue.pop(0)
+         self.numTestDone += 1
+         visitedBoards.add(self)
+         if self.maxDepthSearched < candidate.depth:
+            self.maxDepthSearched = candidate.depth
+         
+         # Test if this is the goal
+         if candidate == self.goal:
+            print "Goal found at a depth of " + str(candidate.depth)
+            self.pathLength = candidate.printPath()
+            self.goalFounded = True
+            self.goalDepth = candidate.depth
+            return True
+         
+         # Detect duplicates among children, increment count, add only 
+         #  non-duplicates to queue
+         moves = candidate.possibleMoves
+         mask = 1
+         while mask != 16:
+            if moves & mask:
+               child = candidate.spawnChild(mask)
+               if child in visitedBoards:
+                  self.numDuplicatesFound += 1
+               else:
+                  queue.append(child)
+            mask <<= 1;
+      return False
+
+   def astar(self, heuristicFunctionFlag):
+      queue = [self.root]
+      self.numTestDone = 0
+      self.maxQueueLength = 0
+      self.numDuplicatesFound = 0
+      self.maxDepthSearched = 0
+      self.pathLength = 0
+      
+      # Keeps track of the boards that have been visited
+      visitedBoards = set()
+      
+      while queue:
+         # Keep track of the max queue length
+         if len(queue) > self.maxQueueLength:
+            self.maxQueueLength = len(queue)
+         
+         # Retrieve the next candidate, mark it was visited, increment count 
+         #  of tests
+         if heuristicFunctionFlag:
+            queue = sorted(queue, key = self.estimatedCostH1)
+         else:
+            queue = sorted(queue, key = self.estimatedCostH2)
+         candidate = queue.pop(0)
+         self.numTestDone += 1
+         visitedBoards.add(self)
+         if self.maxDepthSearched < candidate.depth:
+            self.maxDepthSearched = candidate.depth
+         
+         # Test if this is the goal
+         if candidate == self.goal:
+            print "Goal found at a depth of " + str(candidate.depth)
+            self.pathLength = candidate.printPath()
+            self.goalFounded = True
+            self.goalDepth = candidate.depth
+            return True
+         
+         # Detect duplicates among children, increment count, add only 
+         #  non-duplicates to queue
+         moves = candidate.possibleMoves
+         mask = 1
+         while mask != 16:
+            if moves & mask:
+               child = candidate.spawnChild(mask)
+               if child in visitedBoards:
+                  self.numDuplicatesFound += 1
+               else:
+                  queue.append(child)
+            mask <<= 1;
+      return False
+
+   def idastar(self, heuristicFunctionFlag, depthLimit):
+      queue = [self.root]
+      self.numTestDone = 0
+      self.maxQueueLength = 0
+      self.numDuplicatesFound = 0
+      self.maxDepthSearched = 0
+      self.pathLength = 0
+      
+      # Keeps track of the boards that have been visited
+      visitedBoards = set()
+      
+      while queue:
+         # Keep track of the max queue length
+         if len(queue) > self.maxQueueLength:
+            self.maxQueueLength = len(queue)
+         
+         # Retrieve the next candidate, mark it was visited, increment count 
+         #  of tests
+         if heuristicFunctionFlag:
+            queue = sorted(queue, key = self.estimatedCostH1)
+         else:
+            queue = sorted(queue, key = self.estimatedCostH2)
+         candidate = queue.pop(0)
+         self.numTestDone += 1
+         visitedBoards.add(self)
+         if self.maxDepthSearched < candidate.depth:
+            self.maxDepthSearched = candidate.depth
+         
+         # Test if this is the goal
+         if candidate == self.goal:
+            print "Goal found at a depth of " + str(candidate.depth)
+            self.pathLength = candidate.printPath()
+            self.goalFounded = True
+            self.goalDepth = candidate.depth
+            return True
+         
+         # Detect duplicates among children, increment count, add only 
+         #  non-duplicates to queue
+         moves = candidate.possibleMoves
+         mask = 1
+         while mask != 16:
+            if moves & mask:
+               child = candidate.spawnChild(mask)
+               if child in visitedBoards:
+                  self.numDuplicatesFound += 1
+               else:
+                  if child.depth <= depthLimit:
+                     queue.append(child)     # Append to the queue iff it is
+                                             #  within the depth limit
+            mask <<= 1;
+      return False
+
 class Main:
    def main(self):
       goalArray = [[1, 2, 3], [8, 0, 4], [7, 6, 5]]
@@ -393,9 +621,10 @@ class Main:
       print "Goal"
       print goal
       puzzle = EightPuzzle(root, goal)
-      puzzle.bfs()
+      #puzzle.bfs()
       #puzzle.dfs()
       #puzzle.dls(10)
+      puzzle.greedy(True)
       puzzle.printStats()
       print "Done"
 
