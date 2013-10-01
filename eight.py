@@ -210,12 +210,12 @@ class Board:
          else:
             if self and type(self) is str:
                print self,
-      print "\n=============================="
+      print "\n------------------------------"
       return pathLength - 1 # TODO: Check if correct
 
 # Class that abstracts the notion of the 8Puzzle
 class EightPuzzle:
-   def __init__(self, root, goal, verbose):
+   def __init__(self, root, goal, verbose, timer):
       self.root = root              # Root board
       self.goal = goal              # Goal board
       self.timeTaken = 0.0          # Time taken for the search
@@ -233,6 +233,12 @@ class EightPuzzle:
       self.reverseIndex = {}        # Dictionary (Reverse index) of where each
                                     #  number in the goal state is located.
       self.verbose = verbose        # Whether to print the output verbosely
+      self.hardDepthLimit = 50      # Hard depth limit for algorithms that 
+                                    #  has a tendency to search at large depths
+                                    #  unless stopped.
+      self.algorithm = ""           # Algorithm used
+      self.heuristic = None         # Heuristic used
+      self.timer = timer
       for k in range(9):
          i = k / 3
          j = k % 3
@@ -240,17 +246,28 @@ class EightPuzzle:
 
    # Print the stats for the search run
    def printStats(self):
+      print "Algorithm               = "  + str(self.algorithm)
+      if self.heuristic == True:
+         print "Heuristic               = No. of states out of place"
+      elif self.heuristic == False:
+         print "Heuristic               = Manhatten distance"
+      else:
+         print "Heuristic               = None"
       print "Time taken              = "  + str(self.timeTaken)
       print "No. of tests done       = "  + str(self.numTestDone)
       print "Max. queue length       = "  + str(self.maxQueueLength)
       print "No. of duplicates found = "  + str(self.numDuplicatesFound)
       print "Max. depth searched     = "  + str(self.maxDepthSearched)
-      print "Path length             = "  + str(self.pathLength)
+      #print "Path length             = "  + str(self.pathLength)
       print "Goal found              = "  + str(self.goalFounded)
-      print "Goal depth              = "  + str(self.goalDepth)
+      print "Goal depth/Path length  = "  + str(self.goalDepth)
+      if self.algorithm == "ida*":
+         print "Max. recursion depth    = "  + str(self.maxRecursionDepth)
+      print "=============================="
 
    # Breadth First Search
    def bfs(self):
+      self.algorithm = "bfs"
       queue = [self.root]
       self.numTestDone = 0
       self.maxQueueLength = 0
@@ -263,21 +280,25 @@ class EightPuzzle:
       
       # While there are candidate boards in the queue
       while queue:
+         if self.timer.getTime() > 300.0:
+            print "Time expired"
+            return False
+         
          # Keep track of the max queue length
          if len(queue) > self.maxQueueLength:
             self.maxQueueLength = len(queue)
-         
+            
          # Retrieve the next candidate, mark it was visited, increment count 
          #  of tests
          candidate = queue.pop(0)
          self.numTestDone += 1
-         visitedBoards.add(self)
+         visitedBoards.add(candidate)
          if self.maxDepthSearched < candidate.depth:
             self.maxDepthSearched = candidate.depth
          
          # Test if this is the goal
          if candidate == self.goal:
-            print "Goal found at a depth of " + str(candidate.depth)
+            #print "Goal found at a depth of " + str(candidate.depth)
             self.goalFounded = True
             self.pathLength = candidate.printPath(self.verbose)
             self.goalDepth = candidate.depth
@@ -299,6 +320,7 @@ class EightPuzzle:
 
    # Depth First Search
    def dfs(self):
+      self.algorithm = "dfs"
       stack = [self.root]
       self.numTestDone = 0
       self.maxQueueLength = 0
@@ -311,6 +333,10 @@ class EightPuzzle:
       
       # While there are candidate boards in the stack
       while stack:
+         if self.timer.getTime() > 300.0:
+            print "Time expired"
+            return False
+         
          # Keep track of the max stack length
          if len(stack) > self.maxQueueLength:
             self.maxQueueLength = len(stack)
@@ -319,13 +345,13 @@ class EightPuzzle:
          #  of tests
          candidate = stack.pop()
          self.numTestDone += 1
-         visitedBoards.add(self)
+         visitedBoards.add(candidate)
          if self.maxDepthSearched < candidate.depth:
             self.maxDepthSearched = candidate.depth
          
          # Test if this is the goal
          if candidate == self.goal:
-            print "Goal found at a depth of " + str(candidate.depth)
+            #print "Goal found at a depth of " + str(candidate.depth)
             self.pathLength = candidate.printPath(self.verbose)
             self.goalFounded = True
             self.goalDepth = candidate.depth
@@ -341,11 +367,13 @@ class EightPuzzle:
                if child in visitedBoards:
                   self.numDuplicatesFound += 1
                else:
-                  stack.append(child)
+                  if child.depth <= self.hardDepthLimit:
+                     stack.append(child)
             mask <<= 1;
       return False
 
    def dls(self, depthLimit):
+      self.algorithm = "dls"
       stack = [self.root]
       self.numTestDone = 0
       self.maxQueueLength = 0
@@ -358,6 +386,10 @@ class EightPuzzle:
       
       # While there are candidate boards in the stack
       while stack:
+         if self.timer.getTime() > 300.0:
+            print "Time expired"
+            return False
+         
          # Keep track of the max stack length
          if len(stack) > self.maxQueueLength:
             self.maxQueueLength = len(stack)
@@ -367,13 +399,13 @@ class EightPuzzle:
          candidate = stack.pop()
          #print candidate, str(candidate.depth)
          self.numTestDone += 1
-         visitedBoards.add(self)
+         visitedBoards.add(candidate)
          if self.maxDepthSearched < candidate.depth:
             self.maxDepthSearched = candidate.depth
          
          # Test if this is the goal
          if candidate == self.goal:
-            print "Goal found at a depth of " + str(candidate.depth)
+            #print "Goal found at a depth of " + str(candidate.depth)
             self.pathLength = candidate.printPath(self.verbose)
             self.goalFounded = True
             self.goalDepth = candidate.depth
@@ -394,25 +426,28 @@ class EightPuzzle:
             mask <<= 1;
       return False
 
-   def ids(self, hardDepthLimit):
+   def ids(self):
       # TODO: Check if the stats you are keeping are correct
-      stack = [self.root]
+      self.algorithm = "ids"
       self.numTestDone = 0
       self.maxQueueLength = 0
       self.numDuplicatesFound = 0
       self.maxDepthSearched = 0
       self.pathLength = 0
-      if not hardDepthLimit:
-         hardDepthLimit = 100
       
       # Keeps track of the boards that have been visited
       visitedBoards = set()
       
       depthLimit = 0
-      while depthLimit < hardDepthLimit:
+      while depthLimit < self.hardDepthLimit:
          depthLimit += 1
+         stack = [self.root]
          # While there are candidate boards in the stack
          while stack:
+            if self.timer.getTime() > 300.0:
+               print "Time expired"
+               return False
+            
             # Keep track of the max stack length
             if len(stack) > self.maxQueueLength:
                self.maxQueueLength = len(stack)
@@ -421,13 +456,13 @@ class EightPuzzle:
             #  of tests
             candidate = stack.pop()
             self.numTestDone += 1
-            visitedBoards.add(self)
+            visitedBoards.add(candidate)
             if self.maxDepthSearched < candidate.depth:
                self.maxDepthSearched = candidate.depth
             
             # Test if this is the goal
             if candidate == self.goal:
-               print "Goal found at a depth of " + str(candidate.depth)
+               #print "Goal found at a depth of " + str(candidate.depth)
                self.pathLength = candidate.printPath(self.verbose)
                self.goalFounded = True
                self.goalDepth = candidate.depth
@@ -469,12 +504,14 @@ class EightPuzzle:
       return manhattenDistance
    
    def estimatedCostH1(self, candidateBoard):
-      return candidateBoard.depth + h1(candidateBoard)
+      return candidateBoard.depth + self.h1(candidateBoard)
 
    def estimatedCostH2(self, candidateBoard):
-      return candidateBoard.depth + h2(candidateBoard)
+      return candidateBoard.depth + self.h2(candidateBoard)
 
    def greedy(self, heuristicFunctionFlag):
+      self.algorithm = "greedy"
+      self.heuristic = heuristicFunctionFlag
       queue = [self.root]
       self.numTestDone = 0
       self.maxQueueLength = 0
@@ -486,6 +523,10 @@ class EightPuzzle:
       visitedBoards = set()
       
       while queue:
+         if self.timer.getTime() > 300.0:
+            print "Time expired"
+            return False
+         
          # Keep track of the max queue length
          if len(queue) > self.maxQueueLength:
             self.maxQueueLength = len(queue)
@@ -498,13 +539,13 @@ class EightPuzzle:
             queue = sorted(queue, key = self.h2)
          candidate = queue.pop(0)
          self.numTestDone += 1
-         visitedBoards.add(self)
+         visitedBoards.add(candidate)
          if self.maxDepthSearched < candidate.depth:
             self.maxDepthSearched = candidate.depth
          
          # Test if this is the goal
          if candidate == self.goal:
-            print "Goal found at a depth of " + str(candidate.depth)
+            #print "Goal found at a depth of " + str(candidate.depth)
             self.pathLength = candidate.printPath(self.verbose)
             self.goalFounded = True
             self.goalDepth = candidate.depth
@@ -520,11 +561,14 @@ class EightPuzzle:
                if child in visitedBoards:
                   self.numDuplicatesFound += 1
                else:
-                  queue.append(child)
+                  if child.depth <= self.hardDepthLimit:
+                     queue.append(child)
             mask <<= 1;
       return False
 
    def astar(self, heuristicFunctionFlag):
+      self.algorithm = "a*"
+      self.heuristic = heuristicFunctionFlag
       queue = [self.root]
       self.numTestDone = 0
       self.maxQueueLength = 0
@@ -536,6 +580,10 @@ class EightPuzzle:
       visitedBoards = set()
       
       while queue:
+         if self.timer.getTime() > 300.0:
+            print "Time expired"
+            return False
+         
          # Keep track of the max queue length
          if len(queue) > self.maxQueueLength:
             self.maxQueueLength = len(queue)
@@ -548,13 +596,13 @@ class EightPuzzle:
             queue = sorted(queue, key = self.estimatedCostH2)
          candidate = queue.pop(0)
          self.numTestDone += 1
-         visitedBoards.add(self)
+         visitedBoards.add(candidate)
          if self.maxDepthSearched < candidate.depth:
             self.maxDepthSearched = candidate.depth
          
          # Test if this is the goal
          if candidate == self.goal:
-            print "Goal found at a depth of " + str(candidate.depth)
+            #print "Goal found at a depth of " + str(candidate.depth)
             self.pathLength = candidate.printPath(self.verbose)
             self.goalFounded = True
             self.goalDepth = candidate.depth
@@ -570,67 +618,81 @@ class EightPuzzle:
                if child in visitedBoards:
                   self.numDuplicatesFound += 1
                else:
-                  queue.append(child)
+                  if child.depth <= self.hardDepthLimit:
+                     queue.append(child)
             mask <<= 1;
       return False
 
-   def idastar(self, heuristicFunctionFlag, hardDepthLimit):
-      queue = [self.root]
+   def DFSContour3(self, candidateBoard, fLimit, heuristicFunctionFlag, recursionDepth):
+      recursionDepth += 1
+      self.numTestDone += 1
+      self.visitedBoards.add(candidateBoard)
+      if self.maxDepthSearched < candidateBoard.depth:
+         self.maxDepthSearched = candidateBoard.depth
+      if self.maxRecursionDepth < recursionDepth:
+         self.maxRecursionDepth = recursionDepth
+      
+      if self.timer.getTime() > 10.0:
+         #print "Time expired"
+         return 2000000.0
+
+      fCost = self.estimatedCostH1(candidateBoard)
+      
+      if fCost > fLimit:
+         self.solution = None
+         return fCost
+      
+      if candidateBoard == self.goal:
+         self.solution = candidateBoard
+         return fCost
+      
+      # Detect duplicates among children, increment count, add only 
+      #  non-duplicates to queue
+      minimum = 2000000.0
+      moves = candidateBoard.possibleMoves
+      mask = 1
+      while mask != 16:
+         if moves & mask:
+            child = candidateBoard.spawnChild(mask)
+            if child in self.visitedBoards:
+               self.numDuplicatesFound += 1
+            else:
+               newF = self.DFSContour3(child, fLimit, heuristicFunctionFlag, recursionDepth)     # Append to the queue iff it is
+               if self.solution:
+                  return fLimit
+               if newF < minimum:
+                  minimum = newF
+         mask <<= 1;
+      return minimum
+      
+   def idastar3(self, heuristicFunctionFlag):
+      self.algorithm = "ida*"
+      self.heuristic = heuristicFunctionFlag
       self.numTestDone = 0
       self.maxQueueLength = 0
       self.numDuplicatesFound = 0
       self.maxDepthSearched = 0
       self.pathLength = 0
-      if not hardDepthLimit:
-         hardDepthLimit = 100
+      self.maxRecursionDepth = 0
+      self.solution = None
       
       # Keeps track of the boards that have been visited
-      visitedBoards = set()
+      self.visitedBoards = set()
       
-      depthLimit = 0
-      while depthLimit < hardDepthLimit:
-         depthLimit += 1
-         # While there are candidate boards in the stack
-         while queue:
-            # Keep track of the max queue length
-            if len(queue) > self.maxQueueLength:
-               self.maxQueueLength = len(queue)
-            
-            # Retrieve the next candidate, mark it was visited, increment count 
-            #  of tests
-            if heuristicFunctionFlag:
-               queue = sorted(queue, key = self.estimatedCostH1)
-            else:
-               queue = sorted(queue, key = self.estimatedCostH2)
-            candidate = queue.pop(0)
-            self.numTestDone += 1
-            visitedBoards.add(self)
-            if self.maxDepthSearched < candidate.depth:
-               self.maxDepthSearched = candidate.depth
-            
-            # Test if this is the goal
-            if candidate == self.goal:
-               print "Goal found at a depth of " + str(candidate.depth)
-               self.pathLength = candidate.printPath(self.verbose)
-               self.goalFounded = True
-               self.goalDepth = candidate.depth
-               return True
-            
-            # Detect duplicates among children, increment count, add only 
-            #  non-duplicates to queue
-            moves = candidate.possibleMoves
-            mask = 1
-            while mask != 16:
-               if moves & mask:
-                  child = candidate.spawnChild(mask)
-                  if child in visitedBoards:
-                     self.numDuplicatesFound += 1
-                  else:
-                     if child.depth <= depthLimit:
-                        queue.append(child)     # Append to the queue iff it is
-                                                #  within the depth limit
-               mask <<= 1;
-      return False
+      if heuristicFunctionFlag:
+         fLimit = self.estimatedCostH1(self.root)
+      else:
+         fLimit = self.estimatedCostH2(self.root)
+      
+      while True:
+         fLimit = self.DFSContour3(self.root, fLimit, heuristicFunctionFlag, 0)
+         if self.solution:
+            self.pathLength   = self.solution.printPath(self.verbose)
+            self.goalFounded  = True
+            self.goalDepth    = self.solution.depth
+            return True
+         if fLimit > 1999999.0:
+            return False
 
 # Class to time each search operation
 class Timer:
@@ -655,6 +717,12 @@ class Timer:
    def start(self, string, limit = 100, numBars = 100):
       self.__init__(string, limit, numBars)
       
+   def getTime(self):
+      if self.beginning:
+         return time.clock() - self.beginning + self.time
+      else:
+         return self.time
+
    def stop(self):
       """"Print the CPU secs used"""
       #if self.progress <= self.limit:
@@ -736,8 +804,8 @@ class Main:
          self.goalModel = None
       
       if self.algorithm == "dls":
-         if self.args.d:
-            self.depthLimit = self.args.d[0]
+         if args.d:
+            self.depthLimit = args.d[0]
          else:
             print "Depth limit is required if algorithm is dls"
             return False
@@ -760,6 +828,38 @@ class Main:
          self.verbose = False
       return True
 
+   def doSearch(self):
+      root = Board()
+      root.constructBoard(self.rootModel)
+      goal = Board()
+      goal.constructBoard(self.goalModel)
+      
+      if self.verbose:
+         print "Root"
+         print root
+         print "Goal"
+         print goal
+         print "------------------------------"
+      timerSearch = Timer("Search algorithm", 0, 0)
+      puzzle = EightPuzzle(root, goal, self.verbose, timerSearch)
+      
+      if self.algorithm == "bfs":
+         puzzle.bfs()
+      elif self.algorithm == "dfs":
+         puzzle.dfs()
+      elif self.algorithm == "dls":
+         puzzle.dls(self.depthLimit)
+      elif self.algorithm == "ids":
+         puzzle.ids()
+      elif self.algorithm == "greedy":
+         puzzle.greedy(self.heuristicFunctionFlag)
+      elif self.algorithm == "a*":
+         puzzle.astar(self.heuristicFunctionFlag)
+      elif self.algorithm == "ida*":
+         puzzle.idastar3(self.heuristicFunctionFlag)
+      puzzle.timeTaken = timerSearch.stop()
+      puzzle.printStats()
+      
    def main(self):
       gc.enable()
       if not self.parseCommandLine():
@@ -767,34 +867,12 @@ class Main:
       
       if not self.goalModel:
          self.goalModel = [1, 2, 3, 8, 0, 4, 7, 6, 5]
-      root = Board()
-      root.constructBoard(self.rootModel)
-      goal = Board()
-      goal.constructBoard(self.goalModel)
-      
-      print "Root"
-      print root
-      print "Goal"
-      print goal
-      print "------------------------------"
-      puzzle = EightPuzzle(root, goal, self.verbose)
-      timerSearch = Timer("Search algorithm", 0, 0)
-      if self.algorithm == "bfs":
-         puzzle.bfs()
-      elif self.algorithm == "dfs":
-         puzzle.dfs()
-      elif self.algorithm == "dls":
-         puzzle.dfs(self.depthLimit)
-      elif self.algorithm == "ids":
-         puzzle.ids(25)
-      elif self.algorithm == "greedy":
-         puzzle.greedy(self.heuristicFunctionFlag)
-      elif self.algorithm == "a*":
-         puzzle.astar(self.heuristicFunctionFlag)
-      elif self.algorithm == "ida*":
-         puzzle.idastar(self.heuristicFunctionFlag, 25)
+      if self.algorithm != "all":
+         self.doSearch()
       else:
          rootModels = [[1, 3, 4, 8, 6, 2, 7, 0, 5], [2, 8, 1, 0, 4, 3, 7, 6, 5], [5, 6, 7, 4, 0, 8, 3, 2, 1]]
+         #rootModels = [[1, 3, 4, 8, 6, 2, 7, 0, 5], [2, 8, 1, 0, 4, 3, 7, 6, 5]]
+         #rootModels = [[5, 6, 7, 4, 0, 8, 3, 2, 1]]
          algorithms = ["bfs", "dfs", "dls", "ids", "greedy", "a*", "ida*"]
          heuristicFunctionFlags = [True, False]
          self.goalModel = [1, 2, 3, 8, 0, 4, 7, 6, 5]
@@ -802,45 +880,15 @@ class Main:
          self.verbose = False
          for rootModel in rootModels:
             self.rootModel = rootModel
-            root = Board()
-            root.constructBoard(self.rootModel)
-            goal = Board()
-            goal.constructBoard(self.goalModel)
-            puzzle = EightPuzzle(root, goal, self.verbose)
-            
+            print "Goal: " + str(rootModel)
             for algorithm in algorithms:
-               timerSearch = Timer("Search algorithm", 0, 0)
                self.algorithm = algorithm
-               if self.algorithm == "bfs":
-                  puzzle.bfs()
-               elif self.algorithm == "dfs":
-                  puzzle.dfs()
-               elif self.algorithm == "dls":
-                  puzzle.dfs(self.depthLimit)
-               elif self.algorithm == "ids":
-                  puzzle.ids(25)
-               elif self.algorithm == "greedy":
-                  puzzle.greedy(True)
-                  puzzle.timeTaken = str(timerSearch.stop())
-                  puzzle.printStats()
-                  puzzle = EightPuzzle(root, goal, self.verbose)
-                  timerSearch = Timer("Search algorithm", 0, 0)
-                  puzzle.greedy(False)
-               elif self.algorithm == "a*":
-                  puzzle.astar(True)
-                  puzzle.timeTaken = str(timerSearch.stop())
-                  puzzle.printStats()
-                  puzzle = EightPuzzle(root, goal, self.verbose)
-                  timerSearch = Timer("Search algorithm", 0, 0)
-                  puzzle.astar(False)
-               elif self.algorithm == "ida*":
-                  puzzle.idastar(True, 25)
-                  puzzle.timeTaken = str(timerSearch.stop())
-                  puzzle.printStats()
-                  puzzle = EightPuzzle(root, goal, self.verbose)
-                  timerSearch = Timer("Search algorithm", 0, 0)
-                  puzzle.idastar(False, 25)
-      puzzle.printStats()
-
+               if self.algorithm == "greedy" or self.algorithm == "a*" or self.algorithm == "ida*":
+                  for heuristic in heuristicFunctionFlags:
+                     self.heuristicFunctionFlag = heuristic
+                     self.doSearch()
+               else:
+                  self.doSearch()
+          
 run = Main()
 run.main()
