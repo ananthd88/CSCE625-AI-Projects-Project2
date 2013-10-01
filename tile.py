@@ -1,5 +1,10 @@
 import random
 import math
+import argparse
+import time
+import sys
+import gc
+
 
 # Class that abstracts the notion of the board
 class Board:
@@ -15,7 +20,8 @@ class Board:
       self.signature = ""                 # Signature for the board, unique to
                                           #  a particular configuration of 
                                           #  tiles.
-   
+      self.move = -1                      # The move through which this board 
+                                          #  is related to it's parent.
    # Returns true if the boards are equal (with the same comfiguration)   
    def __eq__(self, other):
       for k in range(9):                  # Board size = 3
@@ -107,8 +113,7 @@ class Board:
          numMoves = 4
          if self.possibleMoves != 8|4|2|1:
             numMoves -= 1
-            if     self.possibleMoves != 8|4|2 and self.possibleMoves != 8|4|1 
-               and self.possibleMoves != 8|2|1 and self.possibleMoves != 4|2|1:
+            if     self.possibleMoves != 8|4|2 and self.possibleMoves != 8|4|1 and self.possibleMoves != 8|2|1 and self.possibleMoves != 4|2|1:
                numMoves -= 1
          rand = random.randint(1, numMoves)
          move = 1
@@ -142,9 +147,9 @@ class Board:
       for k in range(9):                  # Board size = 3
          i = k / 3
          j = k % 3
-         self.tiles[i].append(model[i][j])
+         self.tiles[i].append(model[k])
          #print "<" + str(self.tiles[i][j]) + ", " + str(model[i][j]) + ">"
-         if model[i][j] == 0:
+         if model[k] == 0:
             self.emptyTile = k            # Board size = 3
             self.possibleMoves = 0
             if i != 0:
@@ -168,6 +173,7 @@ class Board:
       copy.parent = None
       copy.depth = self.depth
       copy.signature = self.signature
+      copy.move = -1
       #print
       #print self.tiles
       #print copy.tiles
@@ -180,24 +186,36 @@ class Board:
       child.moveTile(moveCode)
       child.parent = self
       child.depth += 1
+      child.move = moveCode
       return child
 
    # Print the path of derivation from the root board to this board
-   def printPath(self):
+   def printPath(self, verbose):
       pathLength = 0
       stack = []
+      moves = {1: "UP", 2: "RIGHT", 4: "DOWN", 8: "LEFT"}
+      
       while self: # TODO: Check for error
          stack.append(self)
+         stack.append(moves.get(self.move, ""))
          self = self.parent
          pathLength += 1
+      
+      print "=============================="
+      print "Path is given below:"
       while stack:
          self = stack.pop()
-         print self
+         if verbose:
+            print self
+         else:
+            if self and type(self) is str:
+               print self,
+      print "\n=============================="
       return pathLength - 1 # TODO: Check if correct
 
 # Class that abstracts the notion of the 8Puzzle
 class EightPuzzle:
-   def __init__(self, root, goal):
+   def __init__(self, root, goal, verbose):
       self.root = root              # Root board
       self.goal = goal              # Goal board
       self.timeTaken = 0.0          # Time taken for the search
@@ -214,6 +232,7 @@ class EightPuzzle:
       self.goalDepth = -1           # Depth at which the goal was found
       self.reverseIndex = {}        # Dictionary (Reverse index) of where each
                                     #  number in the goal state is located.
+      self.verbose = verbose        # Whether to print the output verbosely
       for k in range(9):
          i = k / 3
          j = k % 3
@@ -260,7 +279,7 @@ class EightPuzzle:
          if candidate == self.goal:
             print "Goal found at a depth of " + str(candidate.depth)
             self.goalFounded = True
-            self.pathLength = candidate.printPath()
+            self.pathLength = candidate.printPath(self.verbose)
             self.goalDepth = candidate.depth
             return True
          
@@ -307,7 +326,7 @@ class EightPuzzle:
          # Test if this is the goal
          if candidate == self.goal:
             print "Goal found at a depth of " + str(candidate.depth)
-            self.pathLength = candidate.printPath()
+            self.pathLength = candidate.printPath(self.verbose)
             self.goalFounded = True
             self.goalDepth = candidate.depth
             return True
@@ -355,7 +374,7 @@ class EightPuzzle:
          # Test if this is the goal
          if candidate == self.goal:
             print "Goal found at a depth of " + str(candidate.depth)
-            self.pathLength = candidate.printPath()
+            self.pathLength = candidate.printPath(self.verbose)
             self.goalFounded = True
             self.goalDepth = candidate.depth
             return True
@@ -409,7 +428,7 @@ class EightPuzzle:
             # Test if this is the goal
             if candidate == self.goal:
                print "Goal found at a depth of " + str(candidate.depth)
-               self.pathLength = candidate.printPath()
+               self.pathLength = candidate.printPath(self.verbose)
                self.goalFounded = True
                self.goalDepth = candidate.depth
                return True
@@ -486,7 +505,7 @@ class EightPuzzle:
          # Test if this is the goal
          if candidate == self.goal:
             print "Goal found at a depth of " + str(candidate.depth)
-            self.pathLength = candidate.printPath()
+            self.pathLength = candidate.printPath(self.verbose)
             self.goalFounded = True
             self.goalDepth = candidate.depth
             return True
@@ -536,7 +555,7 @@ class EightPuzzle:
          # Test if this is the goal
          if candidate == self.goal:
             print "Goal found at a depth of " + str(candidate.depth)
-            self.pathLength = candidate.printPath()
+            self.pathLength = candidate.printPath(self.verbose)
             self.goalFounded = True
             self.goalDepth = candidate.depth
             return True
@@ -555,78 +574,273 @@ class EightPuzzle:
             mask <<= 1;
       return False
 
-   def idastar(self, heuristicFunctionFlag, depthLimit):
+   def idastar(self, heuristicFunctionFlag, hardDepthLimit):
       queue = [self.root]
       self.numTestDone = 0
       self.maxQueueLength = 0
       self.numDuplicatesFound = 0
       self.maxDepthSearched = 0
       self.pathLength = 0
+      if not hardDepthLimit:
+         hardDepthLimit = 100
       
       # Keeps track of the boards that have been visited
       visitedBoards = set()
       
-      while queue:
-         # Keep track of the max queue length
-         if len(queue) > self.maxQueueLength:
-            self.maxQueueLength = len(queue)
-         
-         # Retrieve the next candidate, mark it was visited, increment count 
-         #  of tests
-         if heuristicFunctionFlag:
-            queue = sorted(queue, key = self.estimatedCostH1)
-         else:
-            queue = sorted(queue, key = self.estimatedCostH2)
-         candidate = queue.pop(0)
-         self.numTestDone += 1
-         visitedBoards.add(self)
-         if self.maxDepthSearched < candidate.depth:
-            self.maxDepthSearched = candidate.depth
-         
-         # Test if this is the goal
-         if candidate == self.goal:
-            print "Goal found at a depth of " + str(candidate.depth)
-            self.pathLength = candidate.printPath()
-            self.goalFounded = True
-            self.goalDepth = candidate.depth
-            return True
-         
-         # Detect duplicates among children, increment count, add only 
-         #  non-duplicates to queue
-         moves = candidate.possibleMoves
-         mask = 1
-         while mask != 16:
-            if moves & mask:
-               child = candidate.spawnChild(mask)
-               if child in visitedBoards:
-                  self.numDuplicatesFound += 1
-               else:
-                  if child.depth <= depthLimit:
-                     queue.append(child)     # Append to the queue iff it is
-                                             #  within the depth limit
-            mask <<= 1;
+      depthLimit = 0
+      while depthLimit < hardDepthLimit:
+         depthLimit += 1
+         # While there are candidate boards in the stack
+         while queue:
+            # Keep track of the max queue length
+            if len(queue) > self.maxQueueLength:
+               self.maxQueueLength = len(queue)
+            
+            # Retrieve the next candidate, mark it was visited, increment count 
+            #  of tests
+            if heuristicFunctionFlag:
+               queue = sorted(queue, key = self.estimatedCostH1)
+            else:
+               queue = sorted(queue, key = self.estimatedCostH2)
+            candidate = queue.pop(0)
+            self.numTestDone += 1
+            visitedBoards.add(self)
+            if self.maxDepthSearched < candidate.depth:
+               self.maxDepthSearched = candidate.depth
+            
+            # Test if this is the goal
+            if candidate == self.goal:
+               print "Goal found at a depth of " + str(candidate.depth)
+               self.pathLength = candidate.printPath(self.verbose)
+               self.goalFounded = True
+               self.goalDepth = candidate.depth
+               return True
+            
+            # Detect duplicates among children, increment count, add only 
+            #  non-duplicates to queue
+            moves = candidate.possibleMoves
+            mask = 1
+            while mask != 16:
+               if moves & mask:
+                  child = candidate.spawnChild(mask)
+                  if child in visitedBoards:
+                     self.numDuplicatesFound += 1
+                  else:
+                     if child.depth <= depthLimit:
+                        queue.append(child)     # Append to the queue iff it is
+                                                #  within the depth limit
+               mask <<= 1;
       return False
 
+# Class to time each search operation
+class Timer:
+   """Class to time function calls - Counts the CPU time used"""
+   # Start the timer
+   def __init__(self, string, limit = 100, numBars = 100):
+      self.string = string
+      self.beginning = time.clock()
+      self.time  = 0.0
+      self.numBars = numBars
+      self.oneBar = 0
+      self.numBarsWritten = 0
+      self.limit = limit
+      self.progress = 0
+      if self.numBars:
+         #print self.string
+         self.oneBar = int(math.ceil(limit/numBars))
+         sys.stdout.write("[%s]" % (" " * numBars))
+         sys.stdout.flush()
+         sys.stdout.write("\b" * (numBars + 1))
+   
+   def start(self, string, limit = 100, numBars = 100):
+      self.__init__(string, limit, numBars)
+      
+   def stop(self):
+      """"Print the CPU secs used"""
+      #if self.progress <= self.limit:
+      #   sys.stdout.write('\x1b[2K')
+      #   sys.stdout.write("\b" * (self.numBarsWritten + 2))
+      #   self.progress = self.limit
+      if self.beginning:
+         timetaken = time.clock() - self.beginning + self.time
+      else:
+         timetaken = self.time
+      #print "\033[92mTime taken for (%s) = %f\033[0m" % (self.string, time)
+      self.string = None
+      self.beginning = None
+      self.time = None
+      self.limit = 0
+      self.progress = 0
+      self.numBars = 0
+      self.oneBar = 0
+      return timetaken
+      
+   def tick(self):
+      if self.beginning and self.progress < self.limit:
+         self.progress += 1
+         if self.oneBar and self.progress % self.oneBar == 0:
+            if self.numBarsWritten < self.numBars:
+               if (self.numBarsWritten + 1) % 10 == 0:
+                  sys.stdout.write("|")
+               else:
+                  sys.stdout.write("-")
+               sys.stdout.flush()
+               self.numBarsWritten += 1
+            else:
+               self.progress = self.limit
+               self.numBarsWritten = self.numBars
+         #if self.progress == self.limit:
+         #   sys.stdout.write('\x1b[2K')
+         #   sys.stdout.write("\b" * (self.numBars + 2))
+   
+   def pause(self):
+      if self.beginning:
+         self.time += time.clock() - self.beginning
+         self.beginning = None
+   def unpause(self):
+      if not self.beginning:
+         self.beginning = time.clock()
+
 class Main:
+   def parseCommandLine(self):
+      parser = argparse.ArgumentParser(prog = "python tile.py", description='8-Puzzle Program', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+      parser.add_argument('--version', action='version', version='8-Puzzle 1.0')
+      parser.add_argument('-a', metavar='<algorithm>', type = str, nargs = 1, required = True,
+                         choices = ["bfs", "dfs", "dls", "ids", "greedy", "a*", "ida*", "all"], default = "all",
+                         help = 'Search algorithm to be used, could be one of "bfs", "dfs", "dls", "ids", "greedy", "a*" or "ida*"')
+      parser.add_argument('-r', metavar='<tile>', type = str, nargs = '+', required = True, 
+                         help = 'Root board to be used. Do not use commas or quotes Eg. "0 1 2 3 4 5 6 7 8 9"')
+      parser.add_argument('-g', metavar='<tile>', type = str, nargs = '+', required = False, 
+                         default=['1', '2', '3', '8', '0', '4', '7', '6', '5'], 
+                         help = 'Goal board to be used. Do not use commas or quotes Eg. "0 1 2 3 4 5 6 7 8 9"')
+      parser.add_argument('-d', metavar='<depth limit>', type = int, nargs = 1, required = False, 
+                         default=25, 
+                         help='Depth upto which to be searched. Required for dls, ida*. If not provided, default value of 25 would be used')
+      parser.add_argument('-f', metavar='<heuristic function>', type = str, nargs = 1, required = False,
+                         choices = ["h1", "h2"],
+                         help='Heuristic function to be used. Should be within quotes. Eg. "h1" or "h2"')
+      parser.add_argument('-v', action='store_true', help='Prints verbose output')
+
+      args = parser.parse_args(sys.argv[1:])
+      self.algorithm = args.a[0]
+      
+      self.rootModel = []
+      for string in args.r:
+         self.rootModel.append(int(string))
+      
+      if args.g:
+         self.goalModel = []
+         for string in args.g:
+            self.goalModel.append(int(string))         
+      else:
+         self.goalModel = None
+      
+      if self.algorithm == "dls":
+         if self.args.d:
+            self.depthLimit = self.args.d[0]
+         else:
+            print "Depth limit is required if algorithm is dls"
+            return False
+      else:
+         self.depthLimit = None
+      if self.algorithm == "greedy" or self.algorithm == "a*" or self.algorithm == "ida*":
+         if args.f:
+            if args.f[0] == "h1":
+               self.heuristicFunctionFlag = True
+            else:
+               self.heuristicFunctionFlag = False
+         else:
+            print "Heuristic function required if using one of the informed search algorithms (greedy, a*, ida*)"
+            return False
+      else:
+         self.heuristicFunctionFlag = None
+      if args.v:
+         self.verbose = True
+      else:
+         self.verbose = False
+      return True
+
    def main(self):
-      goalArray = [[1, 2, 3], [8, 0, 4], [7, 6, 5]]
-      rootArray = [[1, 3, 4], [8, 6, 2], [7, 0, 5]]
+      gc.enable()
+      if not self.parseCommandLine():
+         return
+      
+      if not self.goalModel:
+         self.goalModel = [1, 2, 3, 8, 0, 4, 7, 6, 5]
       root = Board()
-      root.constructBoard(rootArray)
+      root.constructBoard(self.rootModel)
       goal = Board()
-      goal.constructBoard(goalArray)
+      goal.constructBoard(self.goalModel)
       
       print "Root"
       print root
       print "Goal"
       print goal
-      puzzle = EightPuzzle(root, goal)
-      #puzzle.bfs()
-      #puzzle.dfs()
-      #puzzle.dls(10)
-      puzzle.greedy(True)
+      print "------------------------------"
+      puzzle = EightPuzzle(root, goal, self.verbose)
+      timerSearch = Timer("Search algorithm", 0, 0)
+      if self.algorithm == "bfs":
+         puzzle.bfs()
+      elif self.algorithm == "dfs":
+         puzzle.dfs()
+      elif self.algorithm == "dls":
+         puzzle.dfs(self.depthLimit)
+      elif self.algorithm == "ids":
+         puzzle.ids(25)
+      elif self.algorithm == "greedy":
+         puzzle.greedy(self.heuristicFunctionFlag)
+      elif self.algorithm == "a*":
+         puzzle.astar(self.heuristicFunctionFlag)
+      elif self.algorithm == "ida*":
+         puzzle.idastar(self.heuristicFunctionFlag, 25)
+      else:
+         rootModels = [[1, 3, 4, 8, 6, 2, 7, 0, 5], [2, 8, 1, 0, 4, 3, 7, 6, 5], [5, 6, 7, 4, 0, 8, 3, 2, 1]]
+         algorithms = ["bfs", "dfs", "dls", "ids", "greedy", "a*", "ida*"]
+         heuristicFunctionFlags = [True, False]
+         self.goalModel = [1, 2, 3, 8, 0, 4, 7, 6, 5]
+         self.depthLimit = 25
+         self.verbose = False
+         for rootModel in rootModels:
+            self.rootModel = rootModel
+            root = Board()
+            root.constructBoard(self.rootModel)
+            goal = Board()
+            goal.constructBoard(self.goalModel)
+            puzzle = EightPuzzle(root, goal, self.verbose)
+            
+            for algorithm in algorithms:
+               timerSearch = Timer("Search algorithm", 0, 0)
+               self.algorithm = algorithm
+               if self.algorithm == "bfs":
+                  puzzle.bfs()
+               elif self.algorithm == "dfs":
+                  puzzle.dfs()
+               elif self.algorithm == "dls":
+                  puzzle.dfs(self.depthLimit)
+               elif self.algorithm == "ids":
+                  puzzle.ids(25)
+               elif self.algorithm == "greedy":
+                  puzzle.greedy(True)
+                  puzzle.timeTaken = str(timerSearch.stop())
+                  puzzle.printStats()
+                  puzzle = EightPuzzle(root, goal, self.verbose)
+                  timerSearch = Timer("Search algorithm", 0, 0)
+                  puzzle.greedy(False)
+               elif self.algorithm == "a*":
+                  puzzle.astar(True)
+                  puzzle.timeTaken = str(timerSearch.stop())
+                  puzzle.printStats()
+                  puzzle = EightPuzzle(root, goal, self.verbose)
+                  timerSearch = Timer("Search algorithm", 0, 0)
+                  puzzle.astar(False)
+               elif self.algorithm == "ida*":
+                  puzzle.idastar(True, 25)
+                  puzzle.timeTaken = str(timerSearch.stop())
+                  puzzle.printStats()
+                  puzzle = EightPuzzle(root, goal, self.verbose)
+                  timerSearch = Timer("Search algorithm", 0, 0)
+                  puzzle.idastar(False, 25)
       puzzle.printStats()
-      print "Done"
 
 run = Main()
 run.main()
